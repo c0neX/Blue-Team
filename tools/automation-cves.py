@@ -4,18 +4,18 @@ import datetime
 import os
 import sys
 
-# Configuration
-CVSS_THRESHOLD = 7.0  # Only include CVEs with this score or higher
-TARGET_VENDOR = "microsoft"  # Case-insensitive matching, use "" for all vendors
+# Configurações
+CVSS_THRESHOLD = 7.0  # Inclui apenas CVEs com score maior ou igual
+TARGET_VENDOR = ""    # Deixe vazio para aceitar todos os vendors (ex: "microsoft")
+DEBUG = True          # Ativa impressão dos CPEs para debug
 OUTPUT_FILE = "filtered_cves.json"
 
-# NVD API settings
+# Configurações da API da NVD
 BASE_URL = "https://services.nvd.nist.gov/rest/json/cves/2.0"
-API_KEY = None  # Optional: Add your NVD API key here if you have one
-
+API_KEY = ""  # Insira sua chave da API da NVD aqui (opcional)
 
 def fetch_recent_cves():
-    today = datetime.datetime.utcnow().date()
+    today = datetime.datetime.now(datetime.timezone.utc).date()
     yesterday = today - datetime.timedelta(days=1)
 
     params = {
@@ -34,7 +34,6 @@ def fetch_recent_cves():
     except json.JSONDecodeError as e:
         print(f"[ERRO] Erro ao decodificar JSON da resposta: {e}")
     return []
-
 
 def cve_matches_criteria(cve_item):
     cve = cve_item.get("cve", {})
@@ -59,6 +58,8 @@ def cve_matches_criteria(cve_item):
             cpes = node.get("cpeMatch", [])
             for cpe in cpes:
                 criteria = cpe.get("criteria", "")
+                if DEBUG:
+                    print("CPE encontrado:", criteria)
                 if TARGET_VENDOR.lower() in criteria.lower():
                     found = True
                     break
@@ -68,7 +69,6 @@ def cve_matches_criteria(cve_item):
             return False
 
     return True
-
 
 def append_to_json_file(data):
     if os.path.exists(OUTPUT_FILE):
@@ -92,7 +92,6 @@ def append_to_json_file(data):
     except IOError as e:
         print(f"[ERRO] Falha ao escrever no arquivo: {e}")
 
-
 def main():
     print("🔍 Buscando CVEs recentes na NVD...")
     recent_cves = fetch_recent_cves()
@@ -109,7 +108,6 @@ def main():
         append_to_json_file(filtered_cves)
     else:
         print("[INFO] Nenhuma CVE corresponde aos critérios definidos.")
-
 
 if __name__ == "__main__":
     try:
