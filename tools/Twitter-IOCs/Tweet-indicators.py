@@ -7,33 +7,33 @@ import argparse
 import requests
 from dotenv import load_dotenv
 
-# 🔒 Carrega variáveis do .env
+#Carrega variáveis do .env
 load_dotenv()
 
-# 🎛️ Argumentos de terminal
+#Argumentos de terminal
 parser = argparse.ArgumentParser()
 parser.add_argument("--max", type=int, default=10, help="Máximo de tweets por keyword (padrão: 10)")
 parser.add_argument("--delay", type=int, default=60, help="Delay entre buscas (padrão: 60s)")
 args = parser.parse_args()
 
-# 🐦 Autenticação Twitter API v2
+#Autenticação Twitter API v2
 bearer_token = os.getenv("TWITTER_BEARER_TOKEN")
 if not bearer_token:
     raise Exception("[ERRO] TWITTER_BEARER_TOKEN não definido no .env")
 
 client = tweepy.Client(bearer_token=bearer_token)
 
-# 🔍 Palavras-chave para IOC hunting
+#Palavras-chave para IOC hunting
 IOC_KEYWORDS = ["#malware", "#IOC", "phishing", "ransomware", "APT", "C2 server"]
 
-# 🧠 Palavras-chave para conteúdo Bug Bounty
+#Palavras-chave para conteúdo Bug Bounty
 BB_KEYWORDS = [
     "#bugbounty", "#infosec", "bug bounty report", "xss writeup",
     "rce writeup", "bypass auth", "CSP bypass", "SSRF trick", 
     "HackerOne report", "Bugcrowd finding", "recon tip", "web hacking"
 ]
 
-# 🧬 Padrões de IOCs
+#Padrões de IOCs
 IOC_PATTERNS = {
     "ipv4": r'\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b',
     "domain": r'\b(?:[a-zA-Z0-9-]+\.)+(?:[a-zA-Z]{2,})\b',
@@ -135,7 +135,7 @@ def send_slack_tips(data):
                 "type": "section",
                 "text": {
                     "type": "mrkdwn",
-                    "text": f"🧠 *Bug Bounty Tip!*\n> Palavra-chave: `{keyword}`\n\n{tweet_text}"
+                    "text": f"*Bug Bounty Tip!*\n> Palavra-chave: `{keyword}`\n\n{tweet_text}"
                 }
             },
             {"type": "divider"}
@@ -153,7 +153,7 @@ def main():
 
     # === IOC HUNTING ===
     for i, keyword in enumerate(IOC_KEYWORDS):
-        print(f"\n🔍 Buscando IOCs com: {keyword}")
+        print(f"\nBuscando IOCs com: {keyword}")
         tweets = search_tweets(keyword, max_results=args.max)
 
         if tweets:
@@ -164,33 +164,33 @@ def main():
                     all_iocs.append({"tweet": tweet.text, **iocs})
 
         if i < len(IOC_KEYWORDS) - 1:
-            print(f"⏳ Esperando {args.delay} segundos...")
+            print(f"Esperando {args.delay} segundos...")
             time.sleep(args.delay)
 
     # === BUG BOUNTY CONTENT ===
     for i, keyword in enumerate(BB_KEYWORDS):
-        print(f"\n🧠 Buscando conteúdo Bug Bounty: {keyword}")
+        print(f"\nBuscando conteúdo Bug Bounty: {keyword}")
         tweets = search_tweets(keyword, max_results=args.max)
 
         if tweets:
             for tweet in tweets:
-                print(f"📌 Tweet: {tweet.text}\n")
+                print(f"Tweet: {tweet.text}\n")
                 bb_tweets.append({"keyword": keyword, "tweet": tweet.text})
 
         if i < len(BB_KEYWORDS) - 1:
-            print(f"⏳ Aguardando {args.delay} segundos...")
+            print(f"Aguardando {args.delay} segundos...")
             time.sleep(args.delay)
 
     # === OUTPUT ===
     if all_iocs:
         save_to_csv(all_iocs)
         send_slack_alert(all_iocs)
-        print(f"\n✅ {len(all_iocs)} IOCs salvos e enviados.")
+        print(f"\n{len(all_iocs)} IOCs salvos e enviados.")
 
     if bb_tweets:
         save_bugbounty_tweets(bb_tweets)
         send_slack_tips(bb_tweets)
-        print(f"\n✅ {len(bb_tweets)} dicas Bug Bounty salvas e enviadas.")
+        print(f"\n{len(bb_tweets)} dicas Bug Bounty salvas e enviadas.")
 
 
 if __name__ == "__main__":
